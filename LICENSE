@@ -19,3 +19,50 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+# Scope of this license
+
+This MIT license covers the **source code** in this repository:
+
+- `src/main/java/com/wdcdp/**` — the CDP backend, original work
+- `src/main/java/de/keksuccino/rinku/**` — a compatibility layer, original work
+- build scripts, documentation and tooling in this repository
+
+## What it does not cover
+
+### `releases/webdisplays-1.2.25-26.1.2.jar`
+
+This jar contains code derived from **WebDisplays by montoyo**, which its author
+released into the **public domain**:
+
+> This mod and its source code is now in public domain. Feel free to do whatever
+> you want with it; make forks, distribute it... whatever. I would appreciate it,
+> of course, if you credited me.
+
+It is redistributed here under those terms. It is **not** covered by the MIT
+license above, and credit belongs to montoyo. The 26.1.2 port in this jar was
+made for this project.
+
+### The package name `de.keksuccino.rinku`
+
+The package name is kept so that WebDisplays' reflective method lookup succeeds —
+it resolves `de.keksuccino.rinku.Rinku` and its two listener interfaces by exact
+binary name.
+
+**The code inside it is an independent implementation, not a copy of the
+original Rinku.** No source from Keksuccino's Rinku is included here. The name is
+used only for binary compatibility, which package names permit.
+
+## Third-party dependencies
+
+This project compiles against, but does not redistribute, NeoForge, Minecraft and
+LWJGL. Each is governed by its own license. `cp.example.txt` lists the jars you
+need; obtain them from their official sources.
+
+## Attribution
+
+- **montoyo** — author of WebDisplays (public domain)
+- **Keksuccino** — author of the original Rinku, whose API surface this project
+  matches for compatibility

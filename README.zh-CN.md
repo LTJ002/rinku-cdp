@@ -429,13 +429,22 @@ java -cp "..." com.wdcdp.cdpscreen.validation.StaticAudit
 
 ---
 
+## 许可
+
+[MIT](LICENSE) —— 覆盖本仓库的**源代码**。
+
+有两样东西**不在** MIT 覆盖范围内：
+
+| 项目 | 实际授权 |
+|---|---|
+| `releases/webdisplays-1.2.25-26.1.2.jar` | 衍生自 **montoyo 的 WebDisplays**，原作者已将其**释入公有领域**。按该条款分发，署名归 montoyo。 |
+| `de.keksuccino.rinku` 这个包名 | 仅为让 WebDisplays 的反射查找成功而保留。包内代码是独立实现，**不含** Keksuccino 原版 Rinku 的任何源码。 |
+
+完整说明见 [LICENSE](LICENSE#scope-of-this-license)。
+
+---
+
 ## 致谢
 
 - **montoyo** —— WebDisplays 原作者。该项目已进入**公有领域**，作者只希望保留署名。
 - **Keksuccino** —— 原版 Rinku（CEF 后端）作者。本仓库的 `de.keksuccino.rinku` 包名是为了兼容 WebDisplays 的反射查找，代码为独立实现。
-
----
-
-## 许可
-
-[MIT](LICENSE)

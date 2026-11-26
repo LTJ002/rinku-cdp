@@ -423,13 +423,22 @@ java -cp "..." com.wdcdp.cdpscreen.validation.StaticAudit
 
 ---
 
+## License
+
+[MIT](LICENSE) — covers the source code in this repository.
+
+Two things in this repository are **not** covered by that MIT license:
+
+| Item | Actual terms |
+|---|---|
+| `releases/webdisplays-1.2.25-26.1.2.jar` | Derived from **montoyo's WebDisplays**, which the author released into the **public domain**. Redistributed under those terms; credit to montoyo. |
+| The package name `de.keksuccino.rinku` | Kept only so WebDisplays' reflective lookup succeeds. The code inside is an independent implementation — no source from Keksuccino's Rinku is included. |
+
+Full details are in [LICENSE](LICENSE#scope-of-this-license).
+
+---
+
 ## Credits
 
 - **montoyo** — author of WebDisplays. The project is in the **public domain**; the author only asks for credit.
 - **Keksuccino** — author of the original Rinku (CEF backend). The `de.keksuccino.rinku` package name here exists so WebDisplays' reflective lookup succeeds; the code is an independent implementation.
-
----
-
-## License
-
-[MIT](LICENSE)
