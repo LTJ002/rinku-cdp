@@ -1,121 +1,51 @@
-# Rinku-CDP — 用 Chrome 替代 CEF 的 WebDisplays 浏览器后端
+# Rinku-CDP
 
-一个 Minecraft 模组的浏览器后端：把 WebDisplays 原本依赖的 **CEF（Chromium Embedded Framework）** 换成 **Chrome DevTools Protocol（CDP）**，用独立 Chrome 进程渲染网页，再把画面和声音送进游戏。
-
-**纯客户端**，服务端不需要安装。
+**给 WebDisplays 换一个浏览器内核：用 Chrome 替代 CEF。**
 
 ---
 
-## 为什么做这个
+## 这是什么
 
-WebDisplays 自带的 CEF 151 **没有 H.264 解码器**（Chromium 开源版不含专有编解码器）。后果是：
+WebDisplays 是 Minecraft 里的网页屏幕模组 —— 你可以用方块搭一面墙，在墙上显示真实的网页、播放 B 站视频。
 
-- B 站、YouTube 等站点检测到「不支持 H.264」后直接拒绝播放
-- 强行改码率、换编码也没用，因为解码器根本不存在
-- 唯一的变通是强制 AV1 —— 但 AV1 在多数机器上是**纯 CPU 软解**
+它原本用一个叫 **CEF**（Chromium 的嵌入式版本）的浏览器内核。这个内核有个硬伤：**没有 H.264 解码器**。
 
-在 i5-8300H 这类笔记本 CPU 上，1080P60 的 AV1 软解跑不动，表现就是：**画面一卡一卡，声音正常，越长的视频越明显**。
+结果是：
 
-Chrome 157 自带 H.264 / HEVC / VP9 的**硬件解码**。所以换个引擎，问题从根上消失。
-
----
-
-## 工作原理
-
-```
-┌─────────────────────────────────────────────┐
-│ Minecraft                                   │
-│  ┌───────────────────────────────────────┐  │
-│  │ WebDisplays（原版，未修改）            │  │
-│  │   ↓ 反射调用 14 个方法                 │  │
-│  │ Rinku API 兼容层（本仓库）             │  │
-│  └───────────────────────────────────────┘  │
-│  ┌───────────────────────────────────────┐  │
-│  │ CdpBrowser → CdpPage → PageTexture    │  │
-│  │   ↓ WebSocket                          │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────┬───────────────────────────┘
-                  │ CDP (WebSocket)
-         ┌────────▼────────┐
-         │ Chrome 进程      │  headless
-         │  ┌────────────┐  │
-         │  │ 网页标签页  │  │  每块屏幕一个窗口
-         │  └────────────┘  │
-         └─────────────────┘
-```
-
-### 关键设计
-
-**1. 画面：screencast → JPEG → GPU 纹理**
-
-Chrome 的 `Page.startScreencast` 输出 JPEG 帧，游戏侧用 STB 解码成 `NativeImage`，再 `glTexSubImage2D` 上传成 OpenGL 纹理。整条链路只在渲染线程碰 GPU。
-
-**2. 声音：页面内 Web Audio 抓取**
-
-Chrome 是 headless 的，没有音频输出设备。所以在页面里注入脚本：
-
-```js
-createMediaElementSource(video) → AudioWorklet → 通过 Runtime.addBinding 回传
-```
-
-音频样本以 float 数组送回 Java 侧，交给 `BrowserAudio` 混音后输出。这样既能听到声音，又不会让 Chrome 抢占系统音频设备。
-
-**3. 输入：CDP Input 域**
-
-鼠标、滚轮、键盘全部转成 CDP 的 `Input.dispatchMouseEvent` / `dispatchKeyEvent`。输入法（IME）通过 `Input.imeSetComposition` 支持中文输入。
-
-**4. 每块屏幕一个 Chrome 窗口**
-
-这点非常关键。Chrome 只对**窗口的活动标签页**做合成，后台标签页 `document.visibilityState === "hidden"`，screencast 收到 **0 帧**，但音频照常播放。
-
-所以每块屏幕用 `Target.createTarget({newWindow: true})` 各自开一个窗口。实测数据：
-
-| 模式 | 三个标签页收到的帧数 |
+| 现象 | 原因 |
 |---|---|
-| 同窗口（默认） | 112, **0**, 96 |
-| 每页独立窗口 | 97, 95, 92 |
+| B 站视频提示「浏览器不支持播放」 | 站点检测到没有 H.264，拒绝播放 |
+| 视频一卡一卡，声音却正常 | 被迫用 AV1，纯 CPU 软解跑不动 1080P60 |
+| 视频越长越卡 | 软解跟不上，缓冲越积越多 |
+
+**Rinku-CDP 的做法**：不用 CEF 了，直接调用你电脑上已装的 Chrome。Chrome 有完整的硬件解码（H.264 / HEVC / VP9），视频流畅问题从根上消失。
 
 ---
 
-## 功能
+## 快速开始
 
-| 功能 | 状态 |
-|---|---|
-| 网页渲染（任意站点） | ✅ |
-| 硬件解码（H.264 / HEVC / VP9） | ✅ 走 Chrome |
-| 页面音频 → 游戏内 3D 音效 | ✅ |
-| 鼠标 / 滚轮 / 键盘输入 | ✅ |
-| 中文输入法（IME 合成） | ✅ |
-| 多屏同时显示 | ✅ |
-| 全屏视频（含原生全屏） | ✅ |
-| 链接弹窗接管 | ✅ |
-| 页面光标样式同步 | ✅ |
-| 离开世界自动回收进程 | ✅ |
-
----
-
-## 安装
-
-### 前置
+### 你需要什么
 
 | 项目 | 要求 |
 |---|---|
-| Minecraft | 26.1.2 |
-| NeoForge | 26.1.2.125 或更高 |
-| **WebDisplays** | 1.2.25-26.1.2 |
-| **Google Chrome** | 已安装（自动检测，也可用 `-Dwdcdp.chrome=` 指定路径） |
+| Minecraft | **26.1.2** |
+| NeoForge | **26.1.2.125** 或更新 |
+| WebDisplays | **1.2.25-26.1.2** |
+| Google Chrome | 已安装即可（建议 120 以上） |
 
-### 步骤
+### 三步装好
 
-1. 把 `rinku-3.1.0-cdp.jar` 放进 `.minecraft/mods/`
-2. 确保 `webdisplays-1.2.25-26.1.2.jar` 也在 `mods/` 里
-3. 启动游戏
+**1.** 把 `rinku-3.1.0-cdp.jar` 放进 `mods` 文件夹
 
-**不需要**安装 CEF，也不需要 `de.keksuccino.rinku` 的原版 Rinku —— 本模组的 `modId` 就是 `rinku`，会顶替它。
+**2.** 确认 `webdisplays-1.2.25-26.1.2.jar` 也在 `mods` 里
 
-### 验证是否正常
+**3.** 启动游戏
 
-启动后日志里应该出现：
+**不需要**装 CEF，**不需要**装原版 Rinku —— 本模组的 mod id 就是 `rinku`，会顶替它。
+
+### 确认装好了
+
+启动后打开日志文件 `logs/latest.log`，搜索 `reflection contract`，应该看到：
 
 ```
 === WebDisplays reflection contract (stage 0A) ===
@@ -124,66 +54,194 @@ createMediaElementSource(video) → AudioWorklet → 通过 Runtime.addBinding �
 === 30 passed, 0 failed ===
 ```
 
-这是启动自检，确认 WebDisplays 需要的 14 个方法签名全部匹配。**有任何 FAIL 就说明版本不兼容**。
+**30 项全 PASS** 就是装对了。有 FAIL 说明版本不匹配。
 
 ---
 
-## 使用
+## 怎么用
 
-### 创建屏幕
+### 创建第一块屏幕
 
-1. 摆好一面矩形墙（屏幕方块，必须填满矩形，不能有洞）
-2. 手持 **Configurator（配置器）** 右键墙面
+1. **搭一面墙** —— 用屏幕方块铺成一个矩形，必须填满，不能有洞
+2. **手持 Configurator（配置器）** 右键墙面
 3. 点 **Create Screen**
 
-> 墙面方块朝向可以混着放，不影响测量。
+> 方块朝向可以混着放，不影响使用。
 
 ### 设置网址
 
-配置界面里点 **Set URL**，输入地址。
+配置界面里点 **Set URL**，输入地址即可。
 
-或使用命令：
+也可以用命令：
 
 ```
 /screen url "https://www.bilibili.com"
-/screen res 1920 1080
-/screen list
-/screen info
 ```
 
-### 多屏
+### 调整清晰度
 
-直接创建多块屏幕即可，每块独立运行。多屏时的性能开销主要在 Chrome 侧（每块屏幕一个渲染进程）。
+```
+/screen res 1920 1080
+```
 
-### 输入
+手动模式最高 1920×1080。自动模式会根据墙的大小算，上限 1280×720。
 
-- 用 **Linker（链接器）** 先右键屏幕，再右键 **Keyboard（键盘方块）** 完成配对
-- 右键键盘打开输入界面
-- 支持中文输入法
+### 想用键盘输入
+
+1. 手持 **Linker（链接器）** 右键屏幕
+2. 再右键 **Keyboard（键盘方块）**
+3. 右键键盘打开输入界面
+
+支持中文输入法。
+
+### 多个屏幕
+
+直接建多块就行，各自独立。
+
+> **性能提示**：每块屏幕会占用一个 Chrome 渲染进程，大约 150–300 MB 内存。建太多会吃内存。
 
 ---
 
-## 性能调优
+## 常见问题
 
-### 分辨率
+**Q：Chrome 会被弹窗打扰吗？**
 
-页面按**桌面尺寸**布局（最小 1280 宽），再按屏幕配置的分辨率缩放抓取。这样网站在桌面模式下渲染，不会切到手机版布局。
+不会。Chrome 以 headless 模式运行，你看不到窗口，它也听不到声音 —— 声音是抓取后送进游戏的。
 
-手动设置的分辨率上限是 1920×1080；自动模式上限 1280×720。
+**Q：会抢占系统音频吗？**
 
-### 帧率
+不会。Chrome 被设置为不打开系统音频设备，音频样本在页面内抓取，由游戏混音输出。
 
-默认上限 60 fps，会根据实际解码情况自适应下调。视频播放时会自动跳过部分合成帧以留出解码余量。
+**Q：B 站登录状态会保存吗？**
 
-### GPU 分配
+会。Chrome 用独立的 profile 目录，登录一次就记住。
 
-默认让 Chrome 使用**低功耗 GPU**（通常是核显），把独显留给游戏：
+**Q：能用 Netflix 吗？**
+
+不能。需要 Widevine DRM 的站点无法播放。
+
+**Q：占用多少资源？**
+
+单块屏幕 1080P 播放视频时，Chrome 侧约 15–25% CPU（有硬件解码时更低），内存 150–300 MB。
+
+**Q：能同时开几块屏幕？**
+
+取决于内存。8 GB 分配下建议不超过 4 块。
+
+---
+
+## 技术细节
+
+<details>
+<summary>点开看实现原理（对普通用户不必读）</summary>
+
+### 架构
 
 ```
---force_low_power_gpu
+Minecraft
+ └─ WebDisplays（原版，未修改）
+     └─ 反射调用 14 个方法
+         └─ Rinku API 兼容层（本仓库）
+             └─ CdpBrowser → CdpPage → PageTexture
+                 └─ WebSocket (CDP)
+                     └─ Chrome 进程（headless）
+                         └─ 网页标签页
 ```
 
-如果你的核显很弱（比如老 Intel HD），可以改配置文件换成独显。
+### 画面怎么来的
+
+```
+Chrome 合成 → Page.startScreencast → JPEG 帧
+    → WebSocket → STB 解码 → NativeImage
+    → glTexSubImage2D → OpenGL 纹理 → 画到墙上
+```
+
+整条链路只在渲染线程碰 GPU。
+
+### 声音怎么来的
+
+Chrome 是 headless 的，没有音频输出设备。所以在页面里注入脚本：
+
+```js
+createMediaElementSource(video) → AudioWorklet → Runtime.addBinding 回传
+```
+
+音频样本以 float 数组送回 Java 侧，交给游戏混音后输出。
+
+### 为什么每块屏幕要单独开窗口
+
+Chrome 只对**窗口的活动标签页**做合成。后台标签页 `document.visibilityState === "hidden"`，screencast 收到 **0 帧**，但音频照常播放 —— 表现就是「黑屏但有声音」。
+
+实测数据（三个标签页同时播视频）：
+
+| 模式 | 各标签页收到的帧数 |
+|---|---|
+| 同窗口 | 112, **0**, 96 |
+| 每页独立窗口 | 97, 95, 92 |
+
+所以用 `Target.createTarget({newWindow: true})` 让每块屏幕各占一个窗口。
+
+### 代码结构
+
+```
+src/main/java/
+├── com/wdcdp/cdpscreen/
+│   ├── CdpBackend.java        Chrome 进程管理、页面表、生命周期
+│   ├── CdpBrowser.java        WebDisplays 看到的对象（14 个反射方法）
+│   ├── CdpHooks.java          NeoForge 事件挂接
+│   ├── MixerBridge.java       反射桥接 WebDisplays 的音频混音器
+│   ├── audio/PageAudio.java   页面音频抓取
+│   ├── cdp/
+│   │   ├── CdpClient.java     WebSocket 多路复用
+│   │   ├── CdpPage.java       页面：screencast、输入、音频
+│   │   ├── ChromeProcess.java 启动参数、进程回收
+│   │   ├── ChromeFinder.java  定位 Chrome
+│   │   └── PageMedia.java     媒体暂停、视频节奏
+│   ├── render/
+│   │   ├── PageTexture.java   OpenGL 纹理管理
+│   │   └── FrameDecoder.java  JPEG 解码
+│   └── validation/            自检工具
+└── de/keksuccino/rinku/       兼容层（保持原 Rinku 的签名）
+```
+
+### 独立性
+
+本仓库可以**单独编译**，不需要 WebDisplays 的源码或 jar。所有对 WebDisplays 的调用都通过反射：
+
+| 调用点 | 方式 |
+|---|---|
+| `ClientInit.pageAudio()` | `Class.forName` + `getMethod` |
+| `ScreenBlockEntity.forgetClientScreens()` | 同上 |
+| `BrowserAudio` 的 5 个方法 | 统一走 `MixerBridge` |
+
+好处：能独立构建，且兼容多个 WebDisplays 版本（缺方法时降级为静音而非崩溃）。
+
+### 从源码构建
+
+需要 JDK 25 和 NeoForge 26.1.2 的 classpath。
+
+```bat
+:: 1. 复制 cp.example.txt 为 cp.txt，把 <MINECRAFT_LIBRARIES> 改成你的路径
+:: 2. 编译
+build.bat
+:: 3. 打包
+package.bat
+```
+
+### 自检工具
+
+```bat
+:: 反射契约检查
+java -cp "build/classes;<classpath>" com.wdcdp.cdpscreen.validation.ReflectionValidator
+
+:: 生命周期检查（自动播放、弹窗、多屏、退出清理）
+java -cp "..." com.wdcdp.cdpscreen.validation.LifecycleProbe
+
+:: 静态审计（线程安全、资源泄漏）
+java -cp "..." com.wdcdp.cdpscreen.validation.StaticAudit
+```
+
+</details>
 
 ---
 
@@ -191,104 +249,16 @@ createMediaElementSource(video) → AudioWorklet → 通过 Runtime.addBinding �
 
 | 限制 | 说明 |
 |---|---|
-| 需要安装 Chrome | 不内置浏览器，用系统的 |
-| Chrome 版本 | 建议 120+，`--headless=new` 需要较新版本 |
-| 首次启动较慢 | Chrome 冷启动约 2–5 秒 |
-| 内存占用 | 每块屏幕约 150–300 MB |
-| DRM 视频 | Netflix 等需要 Widevine 的站点无法播放 |
-
----
-
-## 从源码构建
-
-### 环境
-
-- JDK 25（用了 `Math.clamp` 等新 API）
-- 已安装 NeoForge 26.1.2 的 Minecraft
-
-### 步骤
-
-```bat
-:: 1. 配置类路径（指向你本机的 Minecraft 库）
-::    编辑 cp.txt，把路径改成你自己的
-
-:: 2. 编译
-build.bat
-
-:: 3. 打包
-package.bat
-:: 产物在 build/dist/wdcdp-1.0.0.jar
-```
-
-`build.bat` 使用 `sources.txt` 列出的文件清单，编译到 `build/classes`。
-
----
-
-## 自检工具
-
-仓库内含几个诊断工具，可独立运行：
-
-```bat
-:: 反射契约检查 —— 确认 WebDisplays 能调用全部方法
-java -cp "build/classes;<neoforge classpath>" com.wdcdp.cdpscreen.validation.ReflectionValidator
-
-:: 生命周期检查 —— 自动播放、弹窗、多屏、退出清理
-java -cp "..." com.wdcdp.cdpscreen.validation.LifecycleProbe
-
-:: 静态审计 —— 检查线程安全和资源泄漏
-java -cp "..." com.wdcdp.cdpscreen.validation.StaticAudit
-```
-
----
-
-## 代码结构
-
-```
-src/main/java/
-├── com/wdcdp/cdpscreen/
-│   ├── CdpBackend.java          Chrome 进程管理、页面表、生命周期
-│   ├── CdpBrowser.java          WebDisplays 看到的对象（14 个反射方法）
-│   ├── CdpHooks.java            NeoForge 事件挂接
-│   ├── CdpRenderQueue.java      渲染线程任务队列
-│   ├── NavigationDebounce.java  导航去重
-│   ├── audio/PageAudio.java     页面音频抓取
-│   ├── cdp/
-│   │   ├── CdpClient.java       WebSocket 多路复用
-│   │   ├── CdpPage.java         页面：screencast、输入、音频纪元
-│   │   ├── ChromeProcess.java   启动参数、进程回收
-│   │   ├── ChromeFinder.java    定位 Chrome
-│   │   ├── PageMedia.java       媒体暂停、视频节奏
-│   │   ├── CdpKeys.java         按键码映射
-│   │   └── CdpJson.java         JSON 辅助
-│   ├── render/
-│   │   ├── PageTexture.java     OpenGL 纹理管理
-│   │   └── FrameDecoder.java    JPEG 解码
-│   └── validation/              自检工具
-└── de/keksuccino/rinku/         兼容层（保持原 Rinku 的类名和方法签名）
-```
-
-**兼容层说明**：`de.keksuccino.rinku` 这个包名是为了让 WebDisplays 的反射查找能命中。里面的代码是独立实现的，不含原 Rinku 的代码。
+| 需要安装 Chrome | 不内置浏览器，用系统已装的 |
+| 首次启动慢 | Chrome 冷启动约 2–5 秒 |
+| 内存占用 | 每块屏幕 150–300 MB |
+| DRM 视频 | Netflix 等需 Widevine 的站点无法播放 |
+| 仅 26.1.2 | 其他 MC 版本需要重新适配 |
 
 ---
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE)。
+[MIT](LICENSE)
 
-本仓库只包含 CDP 后端的独立实现，**不含** WebDisplays 或原 Rinku 的任何代码。它们由各自的作者以各自的条款发布，需要单独获取。
-
-### 关于独立性
-
-本仓库可以**单独编译**，不需要 WebDisplays 的源码或 jar 在 classpath 上。所有对 WebDisplays 的调用都通过反射完成：
-
-| 调用点 | 方式 |
-|---|---|
-| `ClientInit.pageAudio()` | `Class.forName` + `getMethod("pageAudio")` |
-| `ScreenBlockEntity.forgetClientScreens()` | `Class.forName` + `getMethod(...)` |
-| `BrowserAudio` 的 `isOpen` / `startCdp` / `packetFloat` / `stop` / `flush` | `MixerBridge` 统一反射 |
-
-这样做的两个好处：
-
-1. **可以独立构建** —— 克隆下来配好 NeoForge classpath 就能编译
-2. **兼容多个 WebDisplays 版本** —— 缺方法时降级为静音而不是崩溃
-
+本仓库只包含 CDP 后端的独立实现，**不含** WebDisplays 或原 Rinku 的任何代码。它们由各自作者以各自条款发布，需要单独获取。
