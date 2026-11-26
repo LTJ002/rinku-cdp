@@ -1,0 +1,50 @@
+modLoader = "javafml"
+loaderVersion = "[11,)"
+license = "MIT"
+
+# The mod id MUST be "rinku", not a name of our own. Two things depend on it:
+#
+#   1. WebDisplays calls ModList.get().isLoaded("rinku") before it will create a
+#      single browser. Any other id leaves every screen blank.
+#   2. WebDisplays declares a required dependency on "rinku", so the game will
+#      not even start if the id is missing.
+#
+# That also means the real Rinku mod has to be removed from mods/: NeoForge
+# rejects two mods sharing an id.
+[[mods]]
+modId = "rinku"
+# Must satisfy WebDisplays' declared range [3.0.4,). Note that a qualifier on the
+# same base version would NOT: Maven ordering puts "3.0.4-cdp" *before* "3.0.4",
+# so the range would reject it. 3.1.0 is unambiguously above the floor.
+version = "3.1.0-cdp.1.0.0"
+displayName = "Rinku (CDP backend)"
+authors = "wdcdp"
+description = '''
+A Chrome DevTools Protocol browser backend for WebDisplays, presented as Rinku.
+
+The bundled CEF runtime ships without an H.264 decoder, so sites that check for
+one (Bilibili, Douyin) refuse to start a player and show "your browser does not
+support HTML5 playback". This backend drives the system's Google Chrome instead,
+which has H.264, and delivers frames to WebDisplays as ordinary Minecraft
+textures through the same de.keksuccino.rinku API that WebDisplays reflects into.
+
+WebDisplays is unmodified. The real Rinku must be removed from mods/, because two
+mods cannot share the id "rinku".
+'''
+
+# WebDisplays reflects into this mod's classes but is not needed to load it, so
+# the dependency is optional in both directions; ordering only decides which side
+# initialises first, and this side wants to be ready before a screen asks.
+[[dependencies.rinku]]
+modId = "neoforge"
+type = "required"
+versionRange = "[26.1.2,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.rinku]]
+modId = "minecraft"
+type = "required"
+versionRange = "[26.1.2]"
+ordering = "NONE"
+side = "CLIENT"

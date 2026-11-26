@@ -1,0 +1,38 @@
+# 编译产物
+build/
+dist/
+out/
+*.class
+
+# 日志
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# 系统
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# 测试素材（体积大，不入库）
+*.mp4
+*.mkv
+*.avi
+*.zip
+*.7z
+
+# 第三方 jar（不入库，用户自行下载）
+libs/*.jar
+!libs/.gitkeep
+
+# 本机配置
+cp-local.txt
+game-jvm.txt
+game-args.txt
