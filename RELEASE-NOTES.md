@@ -2,7 +2,7 @@
 
 A Chrome-based browser backend for WebDisplays — replaces CEF.
 
-[简体中文](RELEASE-NOTES.zh-CN.md) · English
+[简体中文](https://github.com/LTJ002/rinku-cdp/blob/main/RELEASE-NOTES.zh-CN.md) · English
 
 ---
 

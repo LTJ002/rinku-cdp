@@ -2,7 +2,7 @@
 
 给 WebDisplays 换一个浏览器内核：用 Chrome 替代 CEF。
 
-[English](RELEASE-NOTES.md) · 简体中文
+[English](https://github.com/LTJ002/rinku-cdp/blob/main/RELEASE-NOTES.md) · 简体中文
 
 ---
 
