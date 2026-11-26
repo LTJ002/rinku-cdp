@@ -22,124 +22,266 @@ WebDisplays 是 Minecraft 里的网页屏幕模组 —— 你可以用方块搭�
 
 ---
 
-## 快速开始
+## 文件清单
 
-### 你需要什么
+一个完整的网页屏幕需要**两个 jar**，缺一不可：
 
-| 项目 | 要求 |
-|---|---|
-| Minecraft | **26.1.2** |
-| NeoForge | **26.1.2.125** 或更新 |
-| WebDisplays | **1.2.25-26.1.2** |
-| Google Chrome | 已安装即可（建议 120 以上） |
+| 文件 | 作用 | 来源 |
+|---|---|---|
+| `webdisplays-1.2.25-26.1.2.jar` | 屏幕方块、激光笔、渲染、GUI | 本仓库 [Releases](../../releases) |
+| `rinku-3.1.0-cdp.jar` | 浏览器后端（本仓库） | 本仓库 [Releases](../../releases) |
 
-### 三步装好
+> **为什么是两个？** WebDisplays 通过反射调用浏览器库，两者是分开的模组。原版用的是 Rinku（CEF 内核），本仓库用自己实现的 CDP 后端顶替它，mod id 保持 `rinku` 以便无缝替换。
 
-**1.** 把 `rinku-3.1.0-cdp.jar` 放进 `mods` 文件夹
+**不需要**再安装原版 Rinku，也不需要 CEF。
 
-**2.** 确认 `webdisplays-1.2.25-26.1.2.jar` 也在 `mods` 里
+---
 
-**3.** 启动游戏
+## 安装
 
-**不需要**装 CEF，**不需要**装原版 Rinku —— 本模组的 mod id 就是 `rinku`，会顶替它。
+### 前置条件
+
+| 项目 | 要求 | 检查方法 |
+|---|---|---|
+| Minecraft | **26.1.2** | 启动器里看版本 |
+| NeoForge | **26.1.2.125** 或更新 | 启动器版本列表 |
+| Google Chrome | 已安装，建议 120+ | 打开 Chrome → 关于 |
+| 内存 | 建议分配 6 GB 以上 | 启动器 JVM 参数 |
+
+### 三步安装
+
+**第一步：下载两个 jar**
+
+从 [Releases](../../releases) 页面下载：
+- `webdisplays-1.2.25-26.1.2.jar`
+- `rinku-3.1.0-cdp.jar`
+
+**第二步：放进 mods 文件夹**
+
+打开你的游戏目录（启动器里通常有「打开游戏文件夹」按钮），把两个 jar 放进 `mods` 文件夹。
+
+路径示例：
+```
+D:\Minecraft-26.1.2\mods\webdisplays-1.2.25-26.1.2.jar
+D:\Minecraft-26.1.2\mods\rinku-3.1.0-cdp.jar
+```
+
+**第三步：启动游戏**
+
+启动后**先别急着建屏幕**，先确认装对了（见下一节）。
 
 ### 确认装好了
 
-启动后打开日志文件 `logs/latest.log`，搜索 `reflection contract`，应该看到：
+打开 `logs/latest.log`，搜索 `reflection contract`，应该看到：
 
 ```
 === WebDisplays reflection contract (stage 0A) ===
   PASS  de.keksuccino.rinku.Rinku is public
+  PASS  de.keksuccino.rinku.Rinku#createBrowser (String, boolean, int, int) -> Object
   ...
 === 30 passed, 0 failed ===
 ```
 
-**30 项全 PASS** 就是装对了。有 FAIL 说明版本不匹配。
+**30 项全 PASS** 才算装对。
+
+如果看到 `0 passed, 30 failed`，说明两个 jar 版本不匹配 —— 确认都用本仓库 Release 里的版本。
 
 ---
 
-## 怎么用
+## 使用教程
 
-### 创建第一块屏幕
+### 第一步：准备材料
 
-1. **搭一面墙** —— 用屏幕方块铺成一个矩形，必须填满，不能有洞
-2. **手持 Configurator（配置器）** 右键墙面
-3. 点 **Create Screen**
+在游戏里用命令拿到需要的物品（需要 OP 或开启作弊）：
 
-> 方块朝向可以混着放，不影响使用。
+```
+/screen screen 64
+/screen configurator
+/screen linker
+/screen keyboard
+```
 
-### 设置网址
+分别给你：屏幕方块、配置器、链接器、键盘。
 
-配置界面里点 **Set URL**，输入地址即可。
+### 第二步：搭一面墙
+
+用**屏幕方块**在地面或墙上铺一个**矩形**。
+
+**规则**：
+- 必须是完整矩形，中间不能有洞
+- 所有方块朝向可以混着放（不影响）
+- 最小 1×1，最大建议不超过 16×9
+
+```
+正确示例（3×2）：
+■■■
+■■■
+
+错误示例（缺一块）：
+■■■
+■□■    ← 有洞，无法创建
+```
+
+### 第三步：创建屏幕
+
+1. 手持 **Configurator（配置器）**
+2. **右键**墙面任意一个方块
+3. 弹出配置界面，会显示测量的尺寸（如 `3 × 2`）
+4. 点 **Create Screen**
+
+如果按钮显示 `Measuring wall…` 且一直不动，说明墙不是完整矩形 —— 界面会提示缺哪一块。
+
+### 第四步：设置网址
+
+创建成功后，配置界面里会出现：
+
+- **Set URL** —— 设置网页地址
+- **Resolution** —— 设置清晰度
+- **Rotation** —— 旋转画面
+
+点 **Set URL**，输入网址，例如：
+
+```
+https://www.bilibili.com
+```
+
+点确认。屏幕会在几秒内加载页面。
+
+> **提示**：第一次加载较慢（Chrome 冷启动），大约 2–5 秒。
+
+### 第五步：调整清晰度（可选）
+
+配置界面里的 **Resolution** 可以手动设置：
+
+```
+1920 × 1080    ← 高清（默认上限）
+1280 × 720     ← 流畅
+```
 
 也可以用命令：
-
-```
-/screen url "https://www.bilibili.com"
-```
-
-### 调整清晰度
 
 ```
 /screen res 1920 1080
 ```
 
-手动模式最高 1920×1080。自动模式会根据墙的大小算，上限 1280×720。
+点 **Auto** 让模组根据墙的大小自动算。
 
-### 想用键盘输入
+### 第六步：用鼠标操作网页
 
-1. 手持 **Linker（链接器）** 右键屏幕
-2. 再右键 **Keyboard（键盘方块）**
-3. 右键键盘打开输入界面
+手持 **Laser Pointer（激光笔）**，对着屏幕：
 
-支持中文输入法。
+| 操作 | 效果 |
+|---|---|
+| 左键 | 点击网页元素 |
+| 右键 | 网页右键菜单 |
+| 滚轮 | 滚动页面 |
+| 移动准星 | 移动鼠标指针 |
 
-### 多个屏幕
+### 第七步：用键盘输入（可选）
 
-直接建多块就行，各自独立。
+想在网页里打字（搜索、登录）需要键盘方块：
 
-> **性能提示**：每块屏幕会占用一个 Chrome 渲染进程，大约 150–300 MB 内存。建太多会吃内存。
+1. 手持 **Linker（链接器）**，**右键屏幕**（选中它）
+2. 再**右键 Keyboard（键盘方块）**（完成配对）
+3. **右键键盘**，打开输入界面
+4. 直接打字，支持中文输入法
+5. 按 **Esc** 关闭输入界面
+
+---
+
+## 多屏幕
+
+重复上面的步骤即可建多块屏幕，各自独立运行。
+
+**性能参考**：
+
+| 屏幕数 | 内存占用 | 建议 |
+|---|---|---|
+| 1 块 | 约 300 MB | 无压力 |
+| 2–4 块 | 约 600–1200 MB | 8 GB 分配可承受 |
+| 5 块以上 | 1.5 GB+ | 需要更大内存 |
+
+> 每块屏幕会启动一个独立的 Chrome 渲染进程。
+
+---
+
+## 命令参考
+
+| 命令 | 作用 |
+|---|---|
+| `/screen` | 显示帮助 |
+| `/screen screen [数量]` | 获得屏幕方块 |
+| `/screen configurator` | 获得配置器 |
+| `/screen linker` | 获得链接器 |
+| `/screen keyboard` | 获得键盘 |
+| `/screen url "<网址>" [面]` | 给准星对准的屏幕设网址 |
+| `/screen res <宽> <高> [面]` | 设置分辨率 |
+| `/screen list` | 列出附近所有屏幕 |
+| `/screen info` | 显示准星对准的屏幕信息 |
+| `/screen at <x> <y> <z> <面> url "<网址>"` | 按坐标操作，不用瞄准 |
+
+「面」可以是 `north` / `south` / `east` / `west` / `top` / `bottom`。
 
 ---
 
 ## 常见问题
 
-**Q：Chrome 会被弹窗打扰吗？**
+### 屏幕是黑的，但日志显示一切正常
 
-不会。Chrome 以 headless 模式运行，你看不到窗口，它也听不到声音 —— 声音是抓取后送进游戏的。
+**原因**：Chrome 没找到，或者页面加载失败。
 
-**Q：会抢占系统音频吗？**
+**解决**：
+1. 确认 Chrome 装在默认位置
+2. 检查 `logs/latest.log` 里搜 `Chrome` 或 `CDP backend ready`
+3. 如果显示 `Chrome not found`，用启动参数指定路径：
+   ```
+   -Dwdcdp.chrome="C:\Program Files\Google\Chrome\Application\chrome.exe"
+   ```
 
-不会。Chrome 被设置为不打开系统音频设备，音频样本在页面内抓取，由游戏混音输出。
+### 视频卡顿
 
-**Q：B 站登录状态会保存吗？**
+**检查项**：
+1. 分辨率是否设得太高（降到 1280×720 试试）
+2. 是否同时开了太多屏幕
+3. Chrome 是否用了硬件解码（打开 `chrome://gpu` 检查）
 
-会。Chrome 用独立的 profile 目录，登录一次就记住。
+### 多块屏幕只有一块亮
 
-**Q：能用 Netflix 吗？**
+这个 bug 已在 3.1.0 修复。如果还遇到，确认用的是 Release 里的版本。
 
-不能。需要 Widevine DRM 的站点无法播放。
+**原因**：Chrome 只对窗口的活动标签页做合成，后台标签页合成 0 帧。修复方式是每块屏幕各开一个 Chrome 窗口。
 
-**Q：占用多少资源？**
+### 没有声音
 
-单块屏幕 1080P 播放视频时，Chrome 侧约 15–25% CPU（有硬件解码时更低），内存 150–300 MB。
+**检查项**：
+1. 游戏内音量设置
+2. 屏幕距离 —— 模组有 3D 音效，离太远听不到
+3. 日志里搜 `Page audio connected` 确认音频已接上
 
-**Q：能同时开几块屏幕？**
+### 中文显示成方块 / 空白
 
-取决于内存。8 GB 分配下建议不超过 4 块。
+这是 MuoniumPlayer 等其他模组的字体问题，与屏幕无关。屏幕内的网页中文由 Chrome 渲染，不受影响。
+
+### 网页显示「浏览器不支持」
+
+如果用的是原版 Rinku（CEF），这是 H.264 缺失导致的。换成本仓库的 CDP 后端即可解决。
+
+### 想清除登录状态
+
+删除游戏目录下的 `config/wdcdp/chrome-profile` 文件夹，下次启动会重建。
 
 ---
 
 ## 技术细节
 
 <details>
-<summary>点开看实现原理（对普通用户不必读）</summary>
+<summary>点开看实现原理</summary>
 
 ### 架构
 
 ```
 Minecraft
- └─ WebDisplays（原版，未修改）
+ └─ WebDisplays（屏幕方块、渲染）
      └─ 反射调用 14 个方法
          └─ Rinku API 兼容层（本仓库）
              └─ CdpBrowser → CdpPage → PageTexture
@@ -148,7 +290,7 @@ Minecraft
                          └─ 网页标签页
 ```
 
-### 画面怎么来的
+### 画面链路
 
 ```
 Chrome 合成 → Page.startScreencast → JPEG 帧
@@ -158,7 +300,7 @@ Chrome 合成 → Page.startScreencast → JPEG 帧
 
 整条链路只在渲染线程碰 GPU。
 
-### 声音怎么来的
+### 音频链路
 
 Chrome 是 headless 的，没有音频输出设备。所以在页面里注入脚本：
 
@@ -168,9 +310,9 @@ createMediaElementSource(video) → AudioWorklet → Runtime.addBinding 回传
 
 音频样本以 float 数组送回 Java 侧，交给游戏混音后输出。
 
-### 为什么每块屏幕要单独开窗口
+### 为什么每块屏幕单独开窗口
 
-Chrome 只对**窗口的活动标签页**做合成。后台标签页 `document.visibilityState === "hidden"`，screencast 收到 **0 帧**，但音频照常播放 —— 表现就是「黑屏但有声音」。
+Chrome 只对窗口的活动标签页做合成。后台标签页 `document.visibilityState === "hidden"`，screencast 收到 **0 帧**，但音频照常播放 —— 表现就是「黑屏但有声音」。
 
 实测数据（三个标签页同时播视频）：
 
@@ -179,7 +321,7 @@ Chrome 只对**窗口的活动标签页**做合成。后台标签页 `document.v
 | 同窗口 | 112, **0**, 96 |
 | 每页独立窗口 | 97, 95, 92 |
 
-所以用 `Target.createTarget({newWindow: true})` 让每块屏幕各占一个窗口。
+所以用 `Target.createTarget({newWindow: true})`。
 
 ### 代码结构
 
@@ -189,7 +331,7 @@ src/main/java/
 │   ├── CdpBackend.java        Chrome 进程管理、页面表、生命周期
 │   ├── CdpBrowser.java        WebDisplays 看到的对象（14 个反射方法）
 │   ├── CdpHooks.java          NeoForge 事件挂接
-│   ├── MixerBridge.java       反射桥接 WebDisplays 的音频混音器
+│   ├── MixerBridge.java       反射桥接音频混音器
 │   ├── audio/PageAudio.java   页面音频抓取
 │   ├── cdp/
 │   │   ├── CdpClient.java     WebSocket 多路复用
@@ -257,8 +399,13 @@ java -cp "..." com.wdcdp.cdpscreen.validation.StaticAudit
 
 ---
 
+## 致谢
+
+- **montoyo** —— WebDisplays 原作者。该项目已进入**公有领域**，作者只希望保留署名。
+- **Keksuccino** —— 原版 Rinku（CEF 后端）作者。本仓库的 `de.keksuccino.rinku` 包名是为了兼容 WebDisplays 的反射查找，代码为独立实现。
+
+---
+
 ## 许可
 
 [MIT](LICENSE)
-
-本仓库只包含 CDP 后端的独立实现，**不含** WebDisplays 或原 Rinku 的任何代码。它们由各自作者以各自条款发布，需要单独获取。

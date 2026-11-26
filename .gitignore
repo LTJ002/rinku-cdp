@@ -1,10 +1,10 @@
-# 编译产物
+# Build output
 build/
 dist/
 out/
 *.class
 
-# 日志
+# Logs
 *.log
 logs/
 
@@ -16,23 +16,27 @@ logs/
 .classpath
 .project
 
-# 系统
+# OS
 Thumbs.db
 .DS_Store
 desktop.ini
 
-# 测试素材（体积大，不入库）
+# Test media (too large for git)
 *.mp4
 *.mkv
 *.avi
 *.zip
 *.7z
 
-# 第三方 jar（不入库，用户自行下载）
+# Third-party jars the user downloads themselves
 libs/*.jar
 !libs/.gitkeep
 
-# 本机配置
+# Local machine config
 cp-local.txt
 game-jvm.txt
 game-args.txt
+
+# Release jars ARE tracked - they are the deliverable.
+# Do not add *.jar here, and keep releases/ out of the ignore list.
+!releases/*.jar
