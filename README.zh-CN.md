@@ -2,7 +2,7 @@
 
 **给 WebDisplays 换一个浏览器内核：用 Chrome 替代 CEF。**
 
-[English](README.en.md) · 简体中文
+> **其他语言：** [English](README.md) · **简体中文**
 
 ---
 
