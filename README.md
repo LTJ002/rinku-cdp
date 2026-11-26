@@ -131,13 +131,21 @@ If the button stays on `Measuring wall…`, the wall is not a full rectangle —
 
 ### 4. Set the URL
 
-After creation the config screen shows:
+After creation the config screen shows, at the top:
 
-- **Set URL** — the page address
-- **Resolution** — pixel budget
-- **Rotation** — rotate the picture
+```
+Owner: <player name>
+Manual budget: 1920 × 1080        ← or "Auto budget"
+Current capture: 1920 × 1080      ← what Chrome is actually producing
+```
 
-Click **Set URL** and enter an address:
+and these controls:
+
+- **Change URL** — the page address
+- **Resolution** — two input boxes (**ResX** / **ResY**) plus **Apply Resolution** and **Auto**
+- **Rotation** — four buttons, `0°` / `90°` / `180°` / `270°`
+
+Click **Change URL** and enter an address:
 
 ```
 https://www.youtube.com
@@ -145,17 +153,19 @@ https://www.youtube.com
 
 The page loads within a few seconds.
 
+> `Current capture` is the most useful line when something looks wrong: if it shows a size much smaller than the budget, Chrome is downscaling the capture.
+
 > First load is slower (Chrome cold start), roughly 2–5 seconds.
 
 ### 5. Adjust resolution (optional)
 
-Set it in the config screen, or with a command:
+Type into the **ResX / ResY** boxes, then click **Apply Resolution**. Or click **Auto** to derive it from the wall size (320 px per block by default).
+
+The same can be done with a command:
 
 ```
 /screen res 1920 1080
 ```
-
-Click **Auto** to derive it from the wall size (320 px per block by default).
 
 > The value you type is the **page rendering budget**, capped at 7680. The frame actually captured for the wall is capped separately: 1920×1080 in manual mode, 1280×720 in auto mode.
 
@@ -167,18 +177,24 @@ Hold the **Laser Pointer** and aim at the screen:
 |---|---|
 | Left click | Click page elements |
 | Right click | Page context menu |
+| Middle click | Middle-click on the page |
 | Scroll wheel | Scroll the page |
 | Move crosshair | Move the page cursor |
+
+> **The laser pointer only works while you are not sneaking.** Sneaking is the mod's "let me interact with the block normally" gesture, so holding Shift disables page clicks.
 
 ### 7. Type into the page (optional)
 
 To type (searching, logging in) you need a keyboard block:
 
-1. Hold the **Linker**, **right-click the screen** (selects it)
-2. **Right-click the Keyboard block** (pairs them)
-3. **Right-click the keyboard** to open the input panel
-4. Type; IME input (Chinese, Japanese, Korean) is supported
-5. Press **Esc** to close
+1. Hold the **Linker**, **right-click the screen** (selects it — you get an overlay message)
+2. **Right-click the Keyboard block** with the Linker still in hand (pairs them)
+3. **Switch away from the Linker** — while it is held, right-clicking the keyboard only pairs, it does not open the panel
+4. **Right-click the keyboard** to open the input panel
+5. Type; IME input (Chinese, Japanese, Korean) is supported
+6. Press **Esc** to close
+
+> If right-clicking the keyboard does nothing, check the overlay message: `not linked` means step 1–2 did not complete.
 
 ---
 
